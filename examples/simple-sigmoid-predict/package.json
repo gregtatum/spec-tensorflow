@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "start": "budo script.js --live"
+  }
+}
