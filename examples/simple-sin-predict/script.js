@@ -1,12 +1,12 @@
 const tf = require('@tensorflow/tfjs')
 
-const trainingDataSamples = 300
-const units = 128
-const layers = 3
-const trainingIterations = 10
+const trainingDataSamples = 1000
+const units = 256
+const layers = 4
+const trainingIterations = 15
 const epochs = 100
 const pixelsInChartStep = 5
-const learningRate = 0.3
+const learningRate = 0.3;
 
 const baseLayerConfig = {
   units,
@@ -20,7 +20,7 @@ window.model = model
 // Create the initial layer.
 model.add(tf.layers.dense(Object.assign(baseLayerConfig, {
   name: 'hidden_0',
-  inputShape: [1],
+  inputShape: [2],
 })));
 
 // Add as many layers as we want.
@@ -41,24 +41,22 @@ model.compile({
   loss: 'meanSquaredError',
 });
 
-function formula (x) {
-  x -= 0.5
-  x *= 3
-  const epx = Math.pow(Math.E, x)
-  const enx = Math.pow(Math.E, -x)
-  return (epx - enx) / (epx + enx)
+function formula (a, x) {
+  return Math.sin((20 * a + Math.PI * 2) * x)
 }
 
 function generateTrainingData (samples) {
   const x = []
   const y = []
   for (let i = 0; i < samples; i++) {
+    // Distribute the values so that there are more when the graph is denser
+    const a = 1 - Math.pow(Math.random(), 5)
     const value = Math.random()
-    x.push(value)
-    y.push(formula(value))
+    x.push([a, value])
+    y.push(formula(a, value))
   }
   return {
-    x: tf.tensor(x, [samples, 1]),
+    x: tf.tensor(x, [samples, 2]),
     y: tf.tensor(y, [samples, 1])
   }
 }
@@ -69,13 +67,16 @@ const ctx = canvas.getContext('2d')
 const unitStep = pixelsInChartStep / canvas.width
 const totalSteps = canvas.width / pixelsInChartStep
 const scaleX = x => x * canvas.width
-const scaleY = y => 0.5 * y * canvas.height + canvas.height / 2
+const scaleY = y => 0.3 * y * canvas.height + canvas.height / 2
 const xsToGraph = Array(totalSteps).fill(0).map((_, i) => i / totalSteps)
 
 async function drawCanvas () {
   let learnedYs
+  const a = 0;
+  const data = xsToGraph.map(x => ([a, x]))
+
   clearCanvas()
-  drawFormula()
+  drawFormula(a)
 
   console.time('Training the model')
 
@@ -87,7 +88,7 @@ async function drawCanvas () {
     });
 
     learnedYs = model
-      .predict(tf.tensor(xsToGraph, [xsToGraph.length, 1]))
+      .predict(tf.tensor(data, [xsToGraph.length, data[0].length]))
       .dataSync()
 
     const hue = Math.floor(360 * i / trainingIterations)
@@ -101,7 +102,7 @@ async function drawCanvas () {
 
 
   console.table(xsToGraph.map((x, i) => ({
-    trainingYs: formula(x),
+    trainingYs: formula(a, x),
     learnedYs: learnedYs[i],
   })))
 }
@@ -112,15 +113,15 @@ function clearCanvas () {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
-function drawFormula () {
+function drawFormula (a) {
   // Draw the base data
   ctx.strokeStyle = '#000'
   ctx.beginPath()
   for (let i = 0; i <= canvas.width; i += pixelsInChartStep) {
     const x1 = i / canvas.width
     const x2 = x1 + unitStep
-    ctx.moveTo(scaleX(x1), scaleY(formula(x1)))
-    ctx.lineTo(scaleX(x2), scaleY(formula(x2)))
+    ctx.moveTo(scaleX(x1), scaleY(formula(a, x1)))
+    ctx.lineTo(scaleX(x2), scaleY(formula(a, x2)))
   }
   ctx.stroke()
 }
@@ -142,11 +143,22 @@ function drawModel (ys, color) {
   ctx.stroke()
 }
 
+function drawComplete (a) {
+  const data = xsToGraph.map(x => ([a, x]))
+  const learnedYs = model
+    .predict(tf.tensor(data, [xsToGraph.length, 2]))
+    .dataSync()
+
+  clearCanvas()
+  drawFormula(a)
+  drawModel(learnedYs, `hsla(180, 50%, 50%)`)
+}
+
 drawCanvas(0);
 
-;[...document.querySelectorAll('input')].forEach(
-  input => input.addEventListener('change', drawCanvas)
-)
+document.querySelector('input').addEventListener('change', (e) => {
+  drawComplete(Number(e.target.value || 0))
+})
 
 function wait(n) {
   return new Promise(resolve => setTimeout(resolve, n));

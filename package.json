@@ -8,9 +8,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
-    "@tensorflow/tfjs": "^0.11.5",
-    "jest": "^23.1.0"
+    "@tensorflow/tfjs": "^0.11.5"
   }
 }

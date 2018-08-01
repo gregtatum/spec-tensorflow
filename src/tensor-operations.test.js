@@ -108,3 +108,31 @@ describe('matrix operations', async function() {
     ]);
   })
 });
+
+describe('reductions', async function() {
+  await it('find the index of the maximum value in a tensor', function() {
+    const a = tf.tensor([1, 2, 300, 4, 5]);
+    const [index] = a.argMax().dataSync()
+    expect(index).toEqual(2)
+    expect(a.dataSync()[index]).toEqual(300)
+  });
+
+  await it('find the index of the minimum value in a tensor', function() {
+    const a = tf.tensor([1, 2, -300, 4, 5]);
+    const [index] = a.argMin().dataSync()
+    expect(index).toEqual(2)
+    expect(a.dataSync()[index]).toEqual(-300)
+  });
+
+  await it('find the maximum value in a tensor', function() {
+    const a = tf.tensor([1, 2, 300, 4, 5]);
+    const [value] = a.max().dataSync()
+    expect(value).toEqual(300)
+  });
+
+  await it('find the minimum value in a tensor', function() {
+    const a = tf.tensor([1, 2, -300, 4, 5]);
+    const [value] = a.min().dataSync()
+    expect(value).toEqual(-300)
+  });
+})
